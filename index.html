@@ -5421,7 +5421,7 @@ function wf(f,btn){S.wFilter=f;document.querySelectorAll('.wfb').forEach(b=>b.cl
 // ── Settings adj ──────────────────────────────────────────────────
 const _adj={
   size:[1,500,'size','sol'],minsize:[1,100,'minsize','sol'],res:[1,100,'res','sol'],
-  cb:[1,20,'cbLimit',''],daily:[5,200,'daily',''],maxpos:[1,20,'maxpos',''],tip:[100000,5000000,'tipLamports','k']};
+  cb:[1,20,'cbLimit',''],daily:[5,1000,'daily',''],maxpos:[1,20,'maxpos',''],tip:[100000,5000000,'tipLamports','k']};
 const _ids={size:'sv-sz',minsize:'sv-mn',res:'sv-rs',cb:'sv-cb',daily:'sv-dl',maxpos:'sv-mp',tip:'sv-tip'};
 const _fmt={size:v=>(v/100).toFixed(2)+'◎',minsize:v=>(v/100).toFixed(2)+'◎',res:v=>(v/100).toFixed(2)+'◎',cb:v=>''+v,daily:v=>''+v,maxpos:v=>''+v,tip:v=>Math.round(v/1000)+'k'};
 function adj(k,d){
