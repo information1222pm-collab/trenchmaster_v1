@@ -393,7 +393,7 @@ body {
   background:rgba(0,5,15,0.85);
   backdrop-filter:blur(16px);
 }
-#controls-sheet.show { display:flex; }
+
 
 .ctrl-btn {
   width:200px;
@@ -419,7 +419,7 @@ body {
 
 /* ── Settings sheet ── */
 
-#settings-sheet.show { display:flex; }
+
 
 .ss-header {
   display:flex; align-items:center; justify-content:space-between;
@@ -526,25 +526,24 @@ body {
 #gear-btn:active { border-color:rgba(0,220,255,0.3); color:rgba(0,220,255,0.6); }
 
 #gear-btn {
-  position:fixed; bottom:90px; right:18px; z-index:30;
-  width:38px; height:38px; border-radius:50%;
-  border:1px solid rgba(255,255,255,0.08);
-  background:rgba(0,10,25,0.65);
-  color:rgba(255,255,255,0.3); font-size:16px;
+  position:fixed; bottom:90px; right:14px; z-index:9998;
+  width:48px; height:48px; border-radius:50%;
+  border:1px solid rgba(255,255,255,0.12);
+  background:rgba(0,20,50,0.8);
+  color:rgba(255,255,255,0.5); font-size:18px;
   cursor:pointer; display:flex; align-items:center; justify-content:center;
-  backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
-  transition:all .2s;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
 }
-#gear-btn:active { border-color:rgba(0,220,255,0.35); color:rgba(0,220,255,0.7); }
+#gear-btn:active { background:rgba(0,60,120,0.9); color:rgba(0,220,255,0.9); }
 
 #settings-sheet {
-  position:fixed; inset:0; z-index:100;
+  position:fixed; top:0; left:0; right:0; bottom:0; z-index:9999;
   display:none; flex-direction:column;
-  background:rgba(0,6,18,0.96);
-  backdrop-filter:blur(28px); -webkit-backdrop-filter:blur(28px);
-  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  background:rgba(0,6,18,0.97);
+  -webkit-overflow-scrolling:touch;
+  overflow-y:auto;
 }
-#settings-sheet.show { display:flex; }
 
 .ss-header {
   display:flex; align-items:center; justify-content:space-between;
@@ -2239,18 +2238,27 @@ function loadCFG(){
 }
 
 function showSettings(){
-  const sh=document.getElementById('settings-sheet');
-  if(sh)sh.classList.add('show');
-  // Load stored keys fresh from localStorage
-  const pe=document.getElementById('inp-pk');
-  const ppe=document.getElementById('inp-pp');
-  const hle=document.getElementById('inp-hl');
-  if(pe)  pe.value  = localStorage.getItem('trench_pk') || '';
-  if(ppe) ppe.value = localStorage.getItem('trench_pp') || '';
-  if(hle) hle.value = localStorage.getItem('trench_hl') || '';
-  syncSettingsDisplay();
+  var sh=document.getElementById('settings-sheet');
+  if(!sh){console.error('settings-sheet not found');return;}
+  sh.style.display='flex';
+  sh.style.flexDirection='column';
+  // Load stored keys
+  var pe=document.getElementById('inp-pk');
+  var ppe=document.getElementById('inp-pp');
+  var hle=document.getElementById('inp-hl');
+  var pkStored = localStorage.getItem('trench_pk')||'';
+  var ppStored = localStorage.getItem('trench_pp')||'';
+  if(pe)  pe.value = pkStored;
+  if(ppe) ppe.value= ppStored;
+  if(hle) hle.value= localStorage.getItem('trench_hl')||'';
+  var pkLen = document.getElementById('pk-len');
+  if(pkLen) pkLen.textContent = pkStored ? pkStored.length+' chars stored' : 'not set';
+  try{syncSettingsDisplay();}catch(e){}
 }
-function hideSettings(){const s=document.getElementById('settings-sheet');if(s)s.classList.remove('show');}
+function hideSettings(){
+  var s=document.getElementById('settings-sheet');
+  if(s) s.style.display='none';
+}
 function syncSettingsDisplay(){
   // Update wallet intel stats if available
   try {
@@ -2279,10 +2287,11 @@ async function applySettings(){
   const err=document.getElementById('ss-error');
   if(err)err.textContent='';
   // Read directly from fields and save to localStorage
-  const pkVal=(document.getElementById('inp-pk')||{}).value||'';
-  const ppVal=(document.getElementById('inp-pp')||{}).value||'';
-  const hlVal=(document.getElementById('inp-hl')||{}).value||'';
-  const pk=pkVal.trim(); const pp=ppVal.trim(); const hl=hlVal.trim();
+  const B58='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+  const clean=s=>[...s.trim()].filter(c=>B58.includes(c)).join('');
+  const pk=clean((document.getElementById('inp-pk')||{}).value||'');
+  const pp=clean((document.getElementById('inp-pp')||{}).value||'');
+  const hl=((document.getElementById('inp-hl')||{}).value||'').trim();
   if(pk){ localStorage.setItem('trench_pk', pk); }
   if(pp){ localStorage.setItem('trench_pp', pp); }
   if(hl){ localStorage.setItem('trench_hl', hl); }
@@ -2366,8 +2375,8 @@ let _lpTimer=null;
 document.body.addEventListener('touchstart',e=>{_lpTimer=setTimeout(()=>showControls(),700);});
 document.body.addEventListener('touchend',()=>clearTimeout(_lpTimer));
 document.body.addEventListener('touchmove',()=>clearTimeout(_lpTimer));
-function showControls(){document.getElementById('controls-sheet').classList.add('show');}
-function dismissControls(){document.getElementById('controls-sheet').classList.remove('show');}
+function showControls(){var cs=document.getElementById('controls-sheet');if(cs)cs.style.display='flex';}
+function dismissControls(){var cs=document.getElementById('controls-sheet');if(cs)cs.style.display='none';}
 function resetCB(){S.cb=false;S.consecLosses=0;dismissControls();feed('info','Circuit breaker reset','');}
 </script>
 
@@ -4028,16 +4037,16 @@ Object.entries(BUNDLE_MAP).forEach(([name,addrs])=>
       <div class="ss-section-title">Keys</div>
       <div class="ss-fields">
         <div class="ss-field">
-          <div class="ss-label">Burner Private Key <span class="ss-hint">base58</span></div>
+          <div class="ss-label">Burner Private Key <span class="ss-hint" id="pk-len"></span></div>
           <div style="position:relative">
-            <input class="ss-input" id="inp-pk" type="password" autocomplete="off" spellcheck="false" placeholder="base58 private key" style="padding-right:44px" oninput="if(this.value.trim())localStorage.setItem('trench_pk',this.value.trim())" onchange="if(this.value.trim())localStorage.setItem('trench_pk',this.value.trim())" onblur="if(this.value.trim())localStorage.setItem('trench_pk',this.value.trim())">
+            <input class="ss-input" id="inp-pk" type="text" autocorrect="off" autocapitalize="none" spellcheck="false" autocomplete="off" spellcheck="false" placeholder="base58 private key" style="padding-right:44px" oninput="var v=[...this.value].filter(c=>'123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'.includes(c)).join('');if(v)localStorage.setItem('trench_pk',v);" onchange="if(this.value.trim())localStorage.setItem('trench_pk',this.value.trim())" onblur="if(this.value.trim())localStorage.setItem('trench_pk',this.value.trim())">
             <button onclick="var e=document.getElementById('inp-pk');e.type=e.type==='password'?'text':'password';" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);font-size:14px;cursor:pointer;padding:4px">👁</button>
           </div>
         </div>
         <div class="ss-field">
           <div class="ss-label">PumpPortal API Key</div>
           <div style="position:relative">
-            <input class="ss-input" id="inp-pp" type="password" autocomplete="off" spellcheck="false" placeholder="pumpportal api key" style="padding-right:44px" oninput="if(this.value.trim())localStorage.setItem('trench_pp',this.value.trim())" onchange="if(this.value.trim())localStorage.setItem('trench_pp',this.value.trim())" onblur="if(this.value.trim())localStorage.setItem('trench_pp',this.value.trim())">
+            <input class="ss-input" id="inp-pp" type="password" autocomplete="off" spellcheck="false" placeholder="pumpportal api key" style="padding-right:44px" oninput="var v=[...this.value].filter(c=>'123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'.includes(c)).join('');if(v)localStorage.setItem('trench_pp',v);" onchange="if(this.value.trim())localStorage.setItem('trench_pp',this.value.trim())" onblur="if(this.value.trim())localStorage.setItem('trench_pp',this.value.trim())">
             <button onclick="var e=document.getElementById('inp-pp');e.type=e.type==='password'?'text':'password';" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);font-size:14px;cursor:pointer;padding:4px">👁</button>
           </div>
         </div>
@@ -4144,4 +4153,4 @@ Object.entries(BUNDLE_MAP).forEach(([name,addrs])=>
 </div>
 
 </body>
-  </html>
+</html>
