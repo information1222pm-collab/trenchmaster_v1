@@ -738,6 +738,40 @@ body {
 <!-- Trading logic -->
 <script>
 
+// ── Inline bs58 fallback (used if CDN fails to load) ─────────────
+(function(){
+  if(typeof bs58 !== 'undefined') return; // CDN loaded fine
+  var A='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+  var M={};for(var i=0;i<A.length;i++)M[A[i]]=i;
+  window.bs58={
+    decode:function(s){
+      var d=[],i,j,c,carry;
+      for(i=0;i<s.length;i++){
+        c=M[s[i]];
+        if(c===undefined)throw new Error('Non-base58 character: '+s[i]+' at index '+i);
+        carry=c;
+        for(j=0;j<d.length;j++){carry+=d[j]*58;d[j]=carry&0xff;carry>>=8;}
+        while(carry){d.push(carry&0xff);carry>>=8;}
+      }
+      for(i=0;i<s.length&&s[i]==='1';i++)d.push(0);
+      return new Uint8Array(d.reverse());
+    },
+    encode:function(buf){
+      var d=[],i,j,carry;
+      for(i=0;i<buf.length;i++){
+        carry=buf[i];
+        for(j=0;j<d.length;j++){carry+=d[j]<<8;d[j]=carry%58;carry=Math.floor(carry/58);}
+        while(carry){d.push(carry%58);carry=Math.floor(carry/58);}
+      }
+      var s='';
+      for(i=0;i<buf.length&&buf[i]===0;i++)s+='1';
+      for(i=d.length-1;i>=0;i--)s+=A[d[i]];
+      return s;
+    }
+  };
+  console.warn('bs58: using inline fallback (CDN failed)');
+})();
+
 'use strict';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2297,29 +2331,17 @@ async function applySettings(){
   if(hl){ localStorage.setItem('trench_hl', hl); }
   if(!HC.privKey){if(err)err.textContent='Private key required';const e=document.getElementById('inp-pk');if(e){e.classList.add('error');setTimeout(()=>e.classList.remove('error'),600);}return;}
   if(!HC.ppKey){if(err)err.textContent='PumpPortal key required';const e=document.getElementById('inp-pp');if(e){e.classList.add('error');setTimeout(()=>e.classList.remove('error'),600);}return;}
-  // Validate key format — bs58 may not be loaded yet on first open
-  try {
-    if(typeof bs58 !== 'undefined' && typeof solanaWeb3 !== 'undefined') {
-      S.keypair = solanaWeb3.Keypair.fromSecretKey(bs58.decode(HC.privKey));
+  // Validate key if libs available
+  if(typeof bs58 !== 'undefined' && typeof solanaWeb3 !== 'undefined' && pk) {
+    try {
+      S.keypair = solanaWeb3.Keypair.fromSecretKey(bs58.decode(pk||HC.privKey));
       S.pubkey  = S.keypair.publicKey.toString();
-    } else {
-      // Libs still loading — derive pubkey manually from raw bytes
-      // Solana keypair = 64 bytes, last 32 = pubkey
-      const raw = HC.privKey;
-      // Basic length check only — full validation happens in launchCore
-      if(raw.length < 32){
-        if(err) err.textContent='Key too short';
-        const el=document.getElementById('inp-pk');
-        if(el){el.classList.add('error');setTimeout(()=>el.classList.remove('error'),600);}
-        return;
-      }
-      S.pubkey = '(loading...)';
+    } catch(e) {
+      if(err) err.textContent='Invalid key: '+e.message.slice(0,50);
+      const el=document.getElementById('inp-pk');
+      if(el){el.style.borderColor='rgba(255,51,85,0.5)';}
+      return;
     }
-  } catch(e) {
-    if(err) err.textContent='Invalid key: '+e.message.slice(0,40);
-    const el=document.getElementById('inp-pk');
-    if(el){el.classList.add('error');setTimeout(()=>el.classList.remove('error'),600);}
-    return;
   }
   hideSettings();saveCFG();
   // Visual confirmation
