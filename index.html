@@ -740,7 +740,13 @@ body {
 
 // ── Inline bs58 fallback (used if CDN fails to load) ─────────────
 (function(){
-  if(typeof bs58 !== 'undefined') return; // CDN loaded fine
+  // Normalize CDN bs58 if it loaded with a 'default' wrapper (ESM-in-UMD)
+  if(typeof bs58 !== 'undefined') {
+    if(bs58.default && typeof bs58.decode === 'undefined') {
+      window.bs58 = bs58.default; // unwrap default export
+    }
+    return;
+  }
   var A='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
   var M={};for(var i=0;i<A.length;i++)M[A[i]]=i;
   window.bs58={
@@ -2332,7 +2338,7 @@ async function applySettings(){
   if(!HC.privKey){if(err)err.textContent='Private key required';const e=document.getElementById('inp-pk');if(e){e.classList.add('error');setTimeout(()=>e.classList.remove('error'),600);}return;}
   if(!HC.ppKey){if(err)err.textContent='PumpPortal key required';const e=document.getElementById('inp-pp');if(e){e.classList.add('error');setTimeout(()=>e.classList.remove('error'),600);}return;}
   // Validate key if libs available
-  if(typeof bs58 !== 'undefined' && typeof solanaWeb3 !== 'undefined' && pk) {
+  if(typeof bs58 !== 'undefined' && typeof bs58.decode === 'function' && typeof solanaWeb3 !== 'undefined' && pk) {
     try {
       S.keypair = solanaWeb3.Keypair.fromSecretKey(bs58.decode(pk||HC.privKey));
       S.pubkey  = S.keypair.publicKey.toString();
@@ -2355,7 +2361,7 @@ async function launchCore(){
   // Init keypair — wait for libs if needed
   const waitForLibs = async () => {
     let attempts = 0;
-    while((typeof bs58 === 'undefined' || typeof solanaWeb3 === 'undefined') && attempts < 20) {
+    while((typeof bs58 === 'undefined' || typeof bs58.decode !== 'function' || typeof solanaWeb3 === 'undefined') && attempts < 20) {
       await new Promise(r => setTimeout(r, 150));
       attempts++;
     }
